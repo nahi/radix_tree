@@ -7,8 +7,13 @@ class TestRadixTree < Test::Unit::TestCase
     assert_equal nil, h['def']
   end
 
-  def test_aref_empty
+  def test_empty
     h = RadixTree.new
+    h['abc'] = 0
+    assert_equal nil, h['']
+    h[''] = 1
+    assert_equal 1, h['']
+    h.delete('')
     assert_equal nil, h['']
   end
 
@@ -137,5 +142,43 @@ class TestRadixTree < Test::Unit::TestCase
     assert_equal 6, h.delete('b')
     assert_equal 0, h.size
     assert h.empty?
+  end
+
+  def test_each
+    h = RadixTree.new
+    s = { 'aa' => 1, 'ab' => 2, 'bb' => 3, 'bc' => 4, 'a' => 5, 'abc' => 6 }
+    s.each do |k, v|
+      h[k] = v
+    end
+    values = []
+    h.each do |k, v|
+      values << [k, v]
+    end
+    assert_equal s.to_a.sort_by { |k, v| k }, values.sort_by { |k, v| k }
+  end
+
+  def test_keys
+    h = RadixTree.new
+    s = { 'aa' => 1, 'ab' => 2, 'bb' => 3, 'bc' => 4, 'a' => 5, 'abc' => 6 }
+    s.each do |k, v|
+      h[k] = v
+    end
+    assert_equal s.keys.sort, h.keys.sort
+  end
+
+  def test_values
+    h = RadixTree.new
+    s = { 'aa' => 1, 'ab' => 2, 'bb' => 3, 'bc' => 4, 'a' => 5, 'abc' => 6 }
+    s.each do |k, v|
+      h[k] = v
+    end
+    assert_equal s.values.sort, h.values.sort
+  end
+
+  def test_to_s
+    h = RadixTree.new
+    h[:abc] = 1
+    assert_equal 1, h["abc"]
+    assert_equal 1, h[:abc]
   end
 end

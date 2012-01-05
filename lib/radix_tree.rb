@@ -64,43 +64,41 @@ class RadixTree
           push(key[index..-1], value)
         else
           split(index)
-          store(key, value) # search again
+          # search again after split the node
+          store(key, value)
         end
       end
     end
 
     def retrieve(key)
-      return UNDEFINED unless @children
-      key = child_key(key)
-      if child = find_child(key)
-        if child.key == key
-          child.value
-        else
-          child.retrieve(key)
-        end
-      else
+      if @key == key
+        @value
+      elsif !@children
         UNDEFINED
+      else
+        key = child_key(key)
+        if child = find_child(key)
+          child.retrieve(key)
+        else
+          UNDEFINED
+        end
       end
     end
 
     def delete(key)
-      return nil unless @children
-      key = child_key(key)
-      if child = find_child(key)
-        if child.key == key
-          value, child.value = child.value, UNDEFINED
-        else
-          value = child.delete(key)
-        end
-        delete_child(child) if value and child.children.nil?
+      if @key == key
+        value, @value = @value, UNDEFINED
         value
+      elsif !@children
+        nil
+      else
+        key = child_key(key)
+        if child = find_child(key)
+          value = child.delete(key)
+          delete_child(child) if value and child.children.nil?
+          value
+        end
       end
-    end
-
-    protected
-
-    def value=(value)
-      @value = value
     end
 
     private
@@ -185,16 +183,16 @@ class RadixTree
   end
 
   def []=(key, value)
-    @root.store(key, value)
+    @root.store(key.to_s, value)
   end
 
   def key?(key)
-    @root.retrieve(key) != Node::UNDEFINED
+    @root.retrieve(key.to_s) != Node::UNDEFINED
   end
   alias has_key? key?
 
   def [](key)
-    value = @root.retrieve(key)
+    value = @root.retrieve(key.to_s)
     if value == Node::UNDEFINED
       if @default != DEFAULT
         @default
@@ -209,6 +207,6 @@ class RadixTree
   end
 
   def delete(key)
-    @root.delete(key)
+    @root.delete(key.to_s)
   end
 end
