@@ -101,14 +101,7 @@ class RadixTree
         if child = find_child(key)
           value = child.delete(key)
           if value and child.undefined?
-            if child.children.nil?
-              delete_child(child)
-            elsif child.children.size == 1
-              # pull up the grand child as a child
-              delete_child(child)
-              grand = child.children.values.first
-              add_child(Node.new(child.key + grand.key, grand.value, grand.children))
-            end
+            reap(child)
           end
           value
         end
@@ -154,6 +147,17 @@ class RadixTree
       child = Node.new(new_key, @value, @children)
       @value, @children = UNDEFINED, nil
       add_child(child)
+    end
+
+    def reap(child)
+      if child.children.nil?
+        delete_child(child)
+      elsif child.children.size == 1
+        # pull up the grand child as a child
+        delete_child(child)
+        grand = child.children.values.first
+        add_child(Node.new(child.key + grand.key, grand.value, grand.children))
+      end
     end
 
     def child_key(key)
