@@ -7,8 +7,8 @@ to avoid DoS via Algorithmic Complexity Attacks.
 
 == Performance
 
-* 25 times slower for 10 bytes key insertion
-* 20 times slower for 10 bytes key retrieval
+* 25 times slower for 10 bytes key, 100000 elements insertion
+* 10 times slower for 10 bytes key, 100000 elements retrieval
 
 
 == TODO

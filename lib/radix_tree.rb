@@ -1,8 +1,8 @@
 # Naive implementation of Radix Tree for avoiding DoS via Algorithmic
 # Complexity Attacks.
 #
-# 25 times slower for 10 bytes key insertion
-# 20 times slower for 10 bytes key retrieval
+# 25 times slower for 10 bytes key, 100000 elements insertion
+# 10 times slower for 10 bytes key, 100000 elements retrieval
 #
 # TODO: Implement following features for utilizing strength of Radix Tree.
 # * find predecessor
