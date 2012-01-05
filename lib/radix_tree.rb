@@ -61,7 +61,7 @@ class RadixTree
         @value = value
       else
         index = head_match_length(key)
-        if index == @key.bytesize
+        if index == @key.size
           push(key[index..-1], value)
         else
           split(index)
@@ -136,7 +136,7 @@ class RadixTree
 
     # assert: check != @key
     def head_match_length(check)
-      0.upto([check.bytesize, @key.bytesize].min) do |index|
+      0.upto([check.size, @key.size].min) do |index|
         if check[index] != @key[index]
           return index
         end

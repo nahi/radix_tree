@@ -1,3 +1,4 @@
+# -*- encoding: utf-8 -*-
 require File.expand_path('./helper', File.dirname(__FILE__))
 
 class TestRadixTree < Test::Unit::TestCase
@@ -206,5 +207,22 @@ class TestRadixTree < Test::Unit::TestCase
     assert_equal [1, 2], h['foo']
     assert_equal [1, 2], h['bar']
     assert h['baz'].object_id != h['qux'].object_id
+  end
+
+  if RUBY_VERSION >= '1.9.0'
+    def test_encoding
+      h = RadixTree.new
+      s = { 'ああ' => 1, 'あい' => 2, 'いい' => 3, 'いう' => 4, 'あ' => 5, 'あいう' => 6 }
+      s.each do |k, v|
+        h[k] = v
+      end
+      assert_equal 6, h.size
+      s.each do |k, v|
+        assert_equal v, h[k]
+      end
+      str = 'ああ'
+      str.force_encoding('US-ASCII')
+      assert_equal nil, h[str]
+    end
   end
 end
