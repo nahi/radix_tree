@@ -1,0 +1,214 @@
+# Naive implementation of Radix Tree for avoiding DoS via Algorithmic
+# Complexity Attacks.
+#
+# 25 times slower for 10 bytes key insertion
+# 20 times slower for 10 bytes key retrieval
+#
+# TODO: Implement following features for utilizing strength of Radix Tree.
+# * find predecessor
+# * find successor
+# * find_all by start string
+# * delete_all by start string
+class RadixTree
+  include Enumerable
+
+  class Node
+    UNDEFINED = Object.new
+
+    attr_reader :key, :value
+    attr_reader :children
+
+    def initialize(key, value = UNDEFINED, children = nil)
+      @key, @value, @children = key, value, children
+    end
+
+    def empty?
+      @children.nil? and @value == UNDEFINED
+    end
+
+    def size
+      count = @value != UNDEFINED ? 1 : 0
+      if @children
+        @children.inject(count) { |r, (k, v)| r + v.size }
+      else
+        count
+      end
+    end
+
+    def each(prefix, &block)
+      prefix += @key
+      if @value != UNDEFINED
+        block.call(prefix, @value)
+      end
+      if @children
+        @children.each do |key, child|
+          child.each(prefix, &block)
+        end
+      end
+    end
+
+    def keys(prefix)
+      collect(prefix) { |k, v| k }
+    end
+
+    def values(prefix)
+      collect(prefix) { |k, v| v }
+    end
+
+    def store(key, value)
+      if @key == key
+        @value = value
+      else
+        index = head_match_length(key)
+        if index == @key.bytesize
+          push(key[index..-1], value)
+        else
+          split(index)
+          store(key, value) # search again
+        end
+      end
+    end
+
+    def retrieve(key)
+      return UNDEFINED unless @children
+      key = child_key(key)
+      if child = find_child(key)
+        if child.key == key
+          child.value
+        else
+          child.retrieve(key)
+        end
+      else
+        UNDEFINED
+      end
+    end
+
+    def delete(key)
+      return nil unless @children
+      key = child_key(key)
+      if child = find_child(key)
+        if child.key == key
+          value, child.value = child.value, UNDEFINED
+        else
+          value = child.delete(key)
+        end
+        delete_child(child) if value and child.children.nil?
+        value
+      end
+    end
+
+    protected
+
+    def value=(value)
+      @value = value
+    end
+
+    private
+
+    def collect(prefix)
+      pool = []
+      each(prefix) do |key, value|
+        pool << yield(key, value)
+      end
+      pool
+    end
+
+    def push(key, value)
+      if child = find_child(key)
+        child.store(key, value)
+      else
+        add_child(Node.new(key, value))
+      end
+    end
+
+    def split(index)
+      @key, new_key = @key[0, index], @key[index..-1]
+      child = Node.new(new_key, @value, @children)
+      @value, @children = UNDEFINED, nil
+      add_child(child)
+    end
+
+    def child_key(key)
+      index = head_match_length(key)
+      key[index..-1]
+    end
+
+    def head_match_length(check)
+      0.upto([check.bytesize, @key.bytesize].min) do |index|
+        return index if check[index] != @key[index]
+      end
+      raise 'assert check != @key'
+    end
+
+    def find_child(key)
+      @children[key[0]] if @children
+    end
+
+    def add_child(child)
+      @children ||= {}
+      @children[child.key[0]] = child
+    end
+
+    def delete_child(child)
+      @children.delete(child.key[0])
+      @children = nil if @children.empty?
+    end
+  end
+
+  DEFAULT = Object.new
+  
+  def initialize(default = DEFAULT, &block)
+    raise ArgumentError, 'wrong number of arguments' if block && default != DEFAULT
+    @root = Node.new('')
+    @default = default
+    @default_proc = block
+  end
+
+  def empty?
+    @root.empty?
+  end
+
+  def size
+    @root.size
+  end
+
+  def each(&block)
+    @root.each('', &block)
+  end
+
+  def keys
+    @root.keys('')
+  end
+
+  def values
+    @root.values('')
+  end
+
+  def []=(key, value)
+    @root.store(key, value)
+  end
+
+  def key?(key)
+    @root.retrieve(key) != Node::UNDEFINED
+  end
+  alias has_key? key?
+
+  def [](key)
+    value = @root.retrieve(key)
+    if value == Node::UNDEFINED
+      if @default != DEFAULT
+        @default
+      elsif @default_proc
+        @default_proc.call
+      else
+        nil
+      end
+    else
+      value
+    end
+  end
+
+  def delete(key)
+    @root.delete(key)
+  end
+end

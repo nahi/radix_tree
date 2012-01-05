@@ -1,0 +1,34 @@
+radix_tree - Naive implementation of Radix Tree for Ruby
+Copyright (C) 2012 Hiroshi Nakamura <nahi@ruby-lang.org>
+
+My intention is using Radix Tree instead of Hash for parsing external input
+to avoid DoS via Algorithmic Complexity Attacks.
+
+
+== Performance
+
+* 25 times slower for 10 bytes key insertion
+* 20 times slower for 10 bytes key retrieval
+
+
+== TODO
+
+Implement following features for utilizing strength of Radix Tree.
+* find predecessor
+* find successor
+* find_all by start string
+* delete_all by start string
+
+
+== Author
+
+Name:: Hiroshi Nakamura
+E-mail:: nahi@ruby-lang.org
+Project web site:: http://github.com/nahi/radix_tree
+
+
+== License
+
+This program is copyrighted free software by Hiroshi Nakamura.  You can
+redistribute it and/or modify it under the same terms of Ruby's license;
+either the dual license version in 2003, or any later version.
