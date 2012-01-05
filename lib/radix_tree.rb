@@ -104,7 +104,7 @@ class RadixTree
             if child.children.nil?
               delete_child(child)
             elsif child.children.size == 1
-              # pull up grand child
+              # pull up the grand child as a child
               delete_child(child)
               grand = child.children.values.first
               add_child(Node.new(child.key + grand.key, grand.value, grand.children))
@@ -157,13 +157,12 @@ class RadixTree
     end
 
     def child_key(key)
-      index = head_match_length(key)
-      key[index..-1]
+      key[head_match_length(key)..-1]
     end
 
     # assert: check != @key
     def head_match_length(check)
-      0.upto([check.size, @key.size].min) do |index|
+      0.upto(check.size) do |index|
         if check[index] != @key[index]
           return index
         end
