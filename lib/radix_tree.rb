@@ -95,7 +95,9 @@ class RadixTree
         key = child_key(key)
         if child = find_child(key)
           value = child.delete(key)
-          delete_child(child) if value and child.children.nil?
+          if value and child.children.nil?
+            delete_child(child)
+          end
           value
         end
       end
@@ -133,13 +135,17 @@ class RadixTree
 
     def head_match_length(check)
       0.upto([check.bytesize, @key.bytesize].min) do |index|
-        return index if check[index] != @key[index]
+        if check[index] != @key[index]
+          return index
+        end
       end
       raise 'assert check != @key'
     end
 
     def find_child(key)
-      @children[key[0]] if @children
+      if @children
+        @children[key[0]]
+      end
     end
 
     def add_child(child)
@@ -149,14 +155,18 @@ class RadixTree
 
     def delete_child(child)
       @children.delete(child.key[0])
-      @children = nil if @children.empty?
+      if @children.empty?
+        @children = nil
+      end
     end
   end
 
   DEFAULT = Object.new
   
   def initialize(default = DEFAULT, &block)
-    raise ArgumentError, 'wrong number of arguments' if block && default != DEFAULT
+    if block && default != DEFAULT
+      raise ArgumentError, 'wrong number of arguments'
+    end
     @root = Node.new('')
     @default = default
     @default_proc = block
