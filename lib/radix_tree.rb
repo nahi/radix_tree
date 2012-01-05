@@ -10,6 +10,9 @@
 # * find_all by start string
 # * delete_all by start string
 #
+# Improvements.
+# * do tree compaction when delete a node (almost a bug)
+#
 class RadixTree
   include Enumerable
 
