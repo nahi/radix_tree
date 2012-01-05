@@ -9,6 +9,7 @@
 # * find successor
 # * find_all by start string
 # * delete_all by start string
+#
 class RadixTree
   include Enumerable
 
@@ -133,13 +134,14 @@ class RadixTree
       key[index..-1]
     end
 
+    # assert: check != @key
     def head_match_length(check)
       0.upto([check.bytesize, @key.bytesize].min) do |index|
         if check[index] != @key[index]
           return index
         end
       end
-      raise 'assert check != @key'
+      raise 'assert: check != @key'
     end
 
     def find_child(key)

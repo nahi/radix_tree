@@ -181,4 +181,30 @@ class TestRadixTree < Test::Unit::TestCase
     assert_equal 1, h["abc"]
     assert_equal 1, h[:abc]
   end
+
+  def test_key?
+    h = RadixTree.new
+    assert !h.key?('a')
+    s = { 'aa' => 1, 'ab' => 2, 'bb' => 3, 'bc' => 4, 'a' => 5, 'abc' => 6 }
+    s.each do |k, v|
+      h[k] = v
+    end
+    assert h.key?('a')
+  end
+
+  def test_default
+    assert_raise(ArgumentError) do
+      RadixTree.new('both') { :not_allowed }
+    end
+
+    h = RadixTree.new('abc')
+    assert_equal 'abc', h['foo']
+    assert_equal 'abc', h['bar']
+    assert h['baz'].object_id == h['qux'].object_id
+
+    h = RadixTree.new { [1, 2] }
+    assert_equal [1, 2], h['foo']
+    assert_equal [1, 2], h['bar']
+    assert h['baz'].object_id != h['qux'].object_id
+  end
 end
