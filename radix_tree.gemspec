@@ -1,7 +1,7 @@
 require 'rubygems'
 Gem::Specification.new { |s|
   s.name = "radix_tree"
-  s.version = "1.0.0.dev"
+  s.version = "1.0.0.dev.2"
   s.date = "2012-01-05"
   s.author = "Hiroshi Nakamura"
   s.email = "nahi@ruby-lang.org"
