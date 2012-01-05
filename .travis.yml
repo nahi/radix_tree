@@ -8,7 +8,7 @@ rvm:
   - rbx-18mode
   - rbx-19mode
 
-script: "bundle exec rake"
+script: "bundle exec rake --trace"
 
 notifications:
   recipients:
