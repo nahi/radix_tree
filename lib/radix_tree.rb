@@ -10,9 +10,6 @@
 # * find_all by start string
 # * delete_all by start string
 #
-# Improvements.
-# * do tree compaction when delete a node (almost a bug)
-#
 class RadixTree
   include Enumerable
 
@@ -26,8 +23,12 @@ class RadixTree
       @key, @value, @children = key, value, children
     end
 
+    def undefined?
+      @value == UNDEFINED
+    end
+
     def empty?
-      @children.nil? and @value == UNDEFINED
+      @children.nil? and undefined?
     end
 
     def size
@@ -99,8 +100,15 @@ class RadixTree
         key = child_key(key)
         if child = find_child(key)
           value = child.delete(key)
-          if value and child.children.nil?
-            delete_child(child)
+          if value and child.undefined?
+            if child.children.nil?
+              delete_child(child)
+            elsif child.children.size == 1
+              # pull up grand child
+              delete_child(child)
+              grand = child.children.values.first
+              add_child(Node.new(child.key + grand.key, grand.value, grand.children))
+            end
           end
           value
         end

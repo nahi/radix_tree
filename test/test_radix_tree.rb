@@ -145,6 +145,36 @@ class TestRadixTree < Test::Unit::TestCase
     assert h.empty?
   end
 
+  def test_delete_compaction_middle
+    h = RadixTree.new
+    h['a'] = 1
+    h['abc'] = 2
+    h['bb'] = 3
+    h['abcdefghi'] = 4
+    h['abcdefghijzz'] = 5
+    h['abcdefghikzz'] = 6
+    assert_equal 7, h.dump_tree.split($/).size
+    h.delete('a')
+    assert_equal 6, h.dump_tree.split($/).size
+    h['a'] = 1
+    assert_equal 7, h.dump_tree.split($/).size
+  end
+
+  def test_delete_compaction_leaf
+    h = RadixTree.new
+    h['a'] = 1
+    h['abc'] = 2
+    h['bb'] = 3
+    h['abcdefghijzz'] = 4
+    assert_equal 5, h.dump_tree.split($/).size
+    h['abcdefghikzz'] = 5
+    assert_equal 7, h.dump_tree.split($/).size
+    h.delete('abcdefghijzz')
+    assert_equal 5, h.dump_tree.split($/).size
+    h['abcdefghijzz'] = 4
+    assert_equal 7, h.dump_tree.split($/).size
+  end
+
   def test_each
     h = RadixTree.new
     s = { 'aa' => 1, 'ab' => 2, 'bb' => 3, 'bc' => 4, 'a' => 5, 'abc' => 6 }
