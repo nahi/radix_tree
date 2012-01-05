@@ -107,6 +107,22 @@ class RadixTree
       end
     end
 
+    def dump_tree(io, prefix = '', indent = '')
+      prefix += @key
+      indent += '  '
+      if undefined?
+        io << sprintf("#<%s:0x%010x %s>", self.class.name, __id__, prefix.inspect)
+      else
+        io << sprintf("#<%s:0x%010x %s> => %s", self.class.name, __id__, prefix.inspect, @value.inspect)
+      end
+      if @children
+        @children.each do |k, v|
+          io << $/ + indent
+          v.dump_tree(io, prefix, indent)
+        end
+      end
+    end
+
     private
 
     def collect(prefix)
@@ -223,5 +239,10 @@ class RadixTree
 
   def delete(key)
     @root.delete(key.to_s)
+  end
+
+  def dump_tree(io = '')
+    @root.dump_tree(io)
+    io
   end
 end
