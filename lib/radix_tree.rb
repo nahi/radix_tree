@@ -28,7 +28,7 @@ class RadixTree
     end
 
     def empty?
-      @children.nil? and undefined?
+      !@children and undefined?
     end
 
     def size
@@ -150,7 +150,7 @@ class RadixTree
     end
 
     def reap(child)
-      if child.children.nil?
+      if !child.children
         delete_child(child)
       elsif child.children.size == 1
         # pull up the grand child as a child
