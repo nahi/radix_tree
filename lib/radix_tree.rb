@@ -256,4 +256,8 @@ class RadixTree
     @root.dump_tree(io)
     io
   end
+
+  def to_hash
+    inject({}) { |r, (k, v)| r[k] = v; r }
+  end
 end

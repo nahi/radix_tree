@@ -239,6 +239,15 @@ class TestRadixTree < Test::Unit::TestCase
     assert h['baz'].object_id != h['qux'].object_id
   end
 
+  def test_to_hash
+    h = RadixTree.new
+    s = { 'aa' => 1, 'ab' => 2, 'bb' => 3, 'bc' => 4, 'a' => 5, 'abc' => 6 }
+    s.each do |k, v|
+      h[k] = v
+    end
+    assert_equal s, h.to_hash
+  end
+
   if RUBY_VERSION >= '1.9.0'
     def test_encoding
       h = RadixTree.new
