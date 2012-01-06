@@ -181,11 +181,43 @@ class TestRadixTree < Test::Unit::TestCase
     s.each do |k, v|
       h[k] = v
     end
+    assert_equal s.to_a.sort_by { |k, v| k }, h.each.sort_by { |k, v| k }
+    #
     values = []
     h.each do |k, v|
       values << [k, v]
     end
     assert_equal s.to_a.sort_by { |k, v| k }, values.sort_by { |k, v| k }
+  end
+
+  def test_each_key
+    h = RadixTree.new
+    s = { 'aa' => 1, 'ab' => 2, 'bb' => 3, 'bc' => 4, 'a' => 5, 'abc' => 6 }
+    s.each do |k, v|
+      h[k] = v
+    end
+    assert_equal s.keys.sort, h.each_key.sort
+    #
+    values = []
+    h.each_key do |k|
+      values << k
+    end
+    assert_equal s.keys.sort, values.sort
+  end
+
+  def test_each_value
+    h = RadixTree.new
+    s = { 'aa' => 1, 'ab' => 2, 'bb' => 3, 'bc' => 4, 'a' => 5, 'abc' => 6, 'azzzzz' => 6 }
+    s.each do |k, v|
+      h[k] = v
+    end
+    assert_equal s.values.sort, h.each_value.sort
+    #
+    values = []
+    h.each_value do |v|
+      values << v
+    end
+    assert_equal s.values.sort, values.sort
   end
 
   def test_keys
@@ -246,6 +278,18 @@ class TestRadixTree < Test::Unit::TestCase
       h[k] = v
     end
     assert_equal s, h.to_hash
+  end
+
+  def test_clear
+    h = RadixTree.new
+    s = { 'aa' => 1, 'ab' => 2, 'bb' => 3, 'bc' => 4, 'a' => 5, 'abc' => 6 }
+    s.each do |k, v|
+      h[k] = v
+    end
+    assert_equal s, h.to_hash
+    h.clear
+    assert_equal 0, h.size
+    assert h.to_hash.empty?
   end
 
   if RUBY_VERSION >= '1.9.0'

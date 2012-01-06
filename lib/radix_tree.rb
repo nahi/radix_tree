@@ -4,6 +4,20 @@
 # 25 times slower for 10 bytes key, 100000 elements insertion
 # 10 times slower for 10 bytes key, 100000 elements retrieval
 #
+# TODO: Implement following methods for Hash compatibility.
+# * delete_if
+# * reject
+# * reject!
+# * fetch
+# * values_at
+# * replace
+# * key
+# * shift
+# * has_value?/value?
+# * ==
+# * eql?
+# * hash
+#
 # TODO: Implement following features for utilizing strength of Radix Tree.
 # * find predecessor
 # * find successor
@@ -194,6 +208,9 @@ class RadixTree
   end
 
   DEFAULT = Object.new
+
+  attr_accessor :default
+  attr_reader :default_proc
   
   def initialize(default = DEFAULT, &block)
     if block && default != DEFAULT
@@ -211,9 +228,50 @@ class RadixTree
   def size
     @root.size
   end
+  alias length size
 
   def each(&block)
-    @root.each('', &block)
+    if block_given?
+      @root.each('', &block)
+      self
+    else
+      Enumerator.new { |yielder|
+        @root.each('') do |k, v|
+          yielder << [k, v]
+        end
+      }
+    end
+  end
+  alias each_pair each
+
+  def each_key
+    if block_given?
+      @root.each('') do |k, v|
+        yield k
+      end
+      self
+    else
+      Enumerator.new { |yielder|
+        @root.each('') do |k, v|
+          yielder << k
+        end
+      }
+    end
+  end
+
+  def each_value
+    if block_given?
+      @root.each('') do |k, v|
+        yield v
+      end
+      self
+    else
+      Enumerator.new { |yielder|
+        @root.each('') do |k, v|
+          yielder << v
+        end
+      }
+    end
   end
 
   def keys
@@ -224,9 +282,14 @@ class RadixTree
     @root.values('')
   end
 
+  def clear
+    @root = Node.new('')
+  end
+
   def []=(key, value)
     @root.store(key.to_s, value)
   end
+  alias store []=
 
   def key?(key)
     @root.retrieve(key.to_s) != Node::UNDEFINED
