@@ -69,6 +69,18 @@ class RadixTree
         end
       end
     end
+    
+    def each_key
+      each do |k, v|
+        yield k
+      end
+    end
+    
+    def each_value
+      each do |k, v|
+        yield v
+      end
+    end
 
     def keys
       collect { |k, v| k }
@@ -238,7 +250,7 @@ class RadixTree
       @root.each(&block)
       self
     else
-      to_enum { |k, v| [k, v] }
+      Enumerator.new(@root)
     end
   end
   alias each_pair each
@@ -250,7 +262,7 @@ class RadixTree
       end
       self
     else
-      to_enum { |k, v| k }
+      Enumerator.new(@root, :each_key)
     end
   end
 
@@ -261,7 +273,7 @@ class RadixTree
       end
       self
     else
-      to_enum { |k, v| v }
+      Enumerator.new(@root, :each_value)
     end
   end
 
@@ -313,13 +325,5 @@ class RadixTree
 
   def to_hash
     inject({}) { |r, (k, v)| r[k] = v; r }
-  end
-
-  def to_enum
-    Enumerator.new { |yielder|
-      @root.each do |k, v|
-        yielder << yield(k, v)
-      end
-    }
   end
 end
