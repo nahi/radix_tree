@@ -30,11 +30,16 @@ class RadixTree
   class Node
     UNDEFINED = Object.new
 
-    attr_reader :key, :value
+    attr_reader :key, :index
+    attr_reader :value
     attr_reader :children
 
-    def initialize(key, value = UNDEFINED, children = nil)
-      @key, @value, @children = key, value, children
+    def initialize(key, index, value = UNDEFINED, children = nil)
+      @key, @index, @value, @children = key, index, value, children
+    end
+
+    def label
+      @key[0, @index]
     end
 
     def undefined?
@@ -54,33 +59,32 @@ class RadixTree
       end
     end
 
-    def each(prefix, &block)
-      prefix += @key
+    def each(&block)
       if @value != UNDEFINED
-        block.call(prefix, @value)
+        block.call [label, @value]
       end
       if @children
-        @children.each do |key, child|
-          child.each(prefix, &block)
+        @children.each_value do |child|
+          child.each(&block)
         end
       end
     end
 
-    def keys(prefix)
-      collect(prefix) { |k, v| k }
+    def keys
+      collect { |k, v| k }
     end
 
-    def values(prefix)
-      collect(prefix) { |k, v| v }
+    def values
+      collect { |k, v| v }
     end
 
     def store(key, value)
-      if @key == key
+      if @index == key.size and @key.start_with?(key)
         @value = value
       else
         pos = head_match_length(key)
-        if pos == @key.size
-          push(key[pos..-1], value)
+        if pos == @index
+          push(key, value)
         else
           split(pos)
           # search again after split the node
@@ -90,13 +94,13 @@ class RadixTree
     end
 
     def retrieve(key)
-      if @key == key
+      if @index == key.size and @key.start_with?(key)
         @value
       elsif !@children
         UNDEFINED
       else
-        key = child_key(key)
-        if child = find_child(key)
+        pos = head_match_length(key)
+        if child = find_child(key[pos])
           child.retrieve(key)
         else
           UNDEFINED
@@ -105,14 +109,14 @@ class RadixTree
     end
 
     def delete(key)
-      if @key == key
+      if @index == key.size and @key.start_with?(key)
         value, @value = @value, UNDEFINED
         value
       elsif !@children
         nil
       else
-        key = child_key(key)
-        if child = find_child(key)
+        pos = head_match_length(key)
+        if child = find_child(key[pos])
           value = child.delete(key)
           if value and child.undefined?
             reap(child)
@@ -122,44 +126,42 @@ class RadixTree
       end
     end
 
-    def dump_tree(io, prefix = '', indent = '')
-      prefix += @key
+    def dump_tree(io, indent = '')
       indent += '  '
       if undefined?
-        io << sprintf("#<%s:0x%010x %s>", self.class.name, __id__, prefix.inspect)
+        io << sprintf("#<%s:0x%010x %s>", self.class.name, __id__, label.inspect)
       else
-        io << sprintf("#<%s:0x%010x %s> => %s", self.class.name, __id__, prefix.inspect, @value.inspect)
+        io << sprintf("#<%s:0x%010x %s> => %s", self.class.name, __id__, label.inspect, @value.inspect)
       end
       if @children
         @children.each do |k, v|
           io << $/ + indent
-          v.dump_tree(io, prefix, indent)
+          v.dump_tree(io, indent)
         end
       end
     end
 
     private
 
-    def collect(prefix)
+    def collect
       pool = []
-      each(prefix) do |key, value|
+      each do |key, value|
         pool << yield(key, value)
       end
       pool
     end
 
     def push(key, value)
-      if child = find_child(key)
+      if child = find_child(key[@index])
         child.store(key, value)
       else
-        add_child(Node.new(key, value))
+        add_child(Node.new(key, key.size, value))
       end
     end
 
     def split(pos)
-      @key, new_key = @key[0, pos], @key[pos..-1]
-      child = Node.new(new_key, @value, @children)
-      @value, @children = UNDEFINED, nil
+      child = Node.new(@key, @index, @value, @children)
+      @index, @value, @children = pos, UNDEFINED, nil
       add_child(child)
     end
 
@@ -169,38 +171,34 @@ class RadixTree
       elsif child.children.size == 1
         # pull up the grand child as a child
         delete_child(child)
-        grand = child.children.values.first
-        add_child(Node.new(child.key + grand.key, grand.value, grand.children))
+        add_child(child.children.shift[1])
       end
     end
 
-    def child_key(key)
-      key[head_match_length(key)..-1]
-    end
-
-    # assert: check != @key
     def head_match_length(check)
-      0.upto(check.size) do |idx|
+      0.upto(@index) do |idx|
         if check[idx] != @key[idx]
           return idx
         end
       end
-      raise 'assert: check != @key'
+      @index
     end
 
-    def find_child(key)
+    def find_child(char)
       if @children
-        @children[key[0]]
+        @children[char]
       end
     end
 
     def add_child(child)
+      char = child.key[@index]
       @children ||= {}
-      @children[child.key[0]] = child
+      @children[char] = child
     end
 
     def delete_child(child)
-      @children.delete(child.key[0])
+      char = child.key[@index]
+      @children.delete(char)
       if @children.empty?
         @children = nil
       end
@@ -216,7 +214,7 @@ class RadixTree
     if block && default != DEFAULT
       raise ArgumentError, 'wrong number of arguments'
     end
-    @root = Node.new('')
+    @root = Node.new('', 0)
     @default = default
     @default_proc = block
   end
@@ -232,7 +230,7 @@ class RadixTree
 
   def each(&block)
     if block_given?
-      @root.each('', &block)
+      @root.each(&block)
       self
     else
       to_enum { |k, v| [k, v] }
@@ -242,7 +240,7 @@ class RadixTree
 
   def each_key
     if block_given?
-      @root.each('') do |k, v|
+      @root.each do |k, v|
         yield k
       end
       self
@@ -253,7 +251,7 @@ class RadixTree
 
   def each_value
     if block_given?
-      @root.each('') do |k, v|
+      @root.each do |k, v|
         yield v
       end
       self
@@ -263,15 +261,15 @@ class RadixTree
   end
 
   def keys
-    @root.keys('')
+    @root.keys
   end
 
   def values
-    @root.values('')
+    @root.values
   end
 
   def clear
-    @root = Node.new('')
+    @root = Node.new('', 0)
   end
 
   def []=(key, value)
@@ -314,7 +312,7 @@ class RadixTree
 
   def to_enum
     Enumerator.new { |yielder|
-      @root.each('') do |k, v|
+      @root.each do |k, v|
         yielder << yield(k, v)
       end
     }
