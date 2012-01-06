@@ -78,11 +78,11 @@ class RadixTree
       if @key == key
         @value = value
       else
-        index = head_match_length(key)
-        if index == @key.size
-          push(key[index..-1], value)
+        pos = head_match_length(key)
+        if pos == @key.size
+          push(key[pos..-1], value)
         else
-          split(index)
+          split(pos)
           # search again after split the node
           store(key, value)
         end
@@ -156,8 +156,8 @@ class RadixTree
       end
     end
 
-    def split(index)
-      @key, new_key = @key[0, index], @key[index..-1]
+    def split(pos)
+      @key, new_key = @key[0, pos], @key[pos..-1]
       child = Node.new(new_key, @value, @children)
       @value, @children = UNDEFINED, nil
       add_child(child)
@@ -180,9 +180,9 @@ class RadixTree
 
     # assert: check != @key
     def head_match_length(check)
-      0.upto(check.size) do |index|
-        if check[index] != @key[index]
-          return index
+      0.upto(check.size) do |idx|
+        if check[idx] != @key[idx]
+          return idx
         end
       end
       raise 'assert: check != @key'
