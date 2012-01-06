@@ -79,7 +79,7 @@ class RadixTree
     end
 
     def store(key, value)
-      if @index == key.size and @key.start_with?(key)
+      if same_key?(key)
         @value = value
       else
         pos = head_match_length(key)
@@ -87,14 +87,17 @@ class RadixTree
           push(key, value)
         else
           split(pos)
-          # search again after split the node
-          store(key, value)
+          if same_key?(key)
+            @value = value
+          else
+            push(key, value)
+          end
         end
       end
     end
 
     def retrieve(key)
-      if @index == key.size and @key.start_with?(key)
+      if same_key?(key)
         @value
       elsif !@children
         UNDEFINED
@@ -109,7 +112,7 @@ class RadixTree
     end
 
     def delete(key)
-      if @index == key.size and @key.start_with?(key)
+      if same_key?(key)
         value, @value = @value, UNDEFINED
         value
       elsif !@children
@@ -143,6 +146,10 @@ class RadixTree
 
     private
 
+    def same_key?(key)
+      @index == key.size and @key.start_with?(key)
+    end
+
     def collect
       pool = []
       each do |key, value|
@@ -152,7 +159,7 @@ class RadixTree
     end
 
     def push(key, value)
-      if child = find_child(key[@index])
+      if @children && child = find_child(key[@index])
         child.store(key, value)
       else
         add_child(Node.new(key, key.size, value))
@@ -185,9 +192,7 @@ class RadixTree
     end
 
     def find_child(char)
-      if @children
-        @children[char]
-      end
+      @children[char]
     end
 
     def add_child(child)
