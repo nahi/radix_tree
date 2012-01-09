@@ -90,11 +90,11 @@ class RadixTree
       collect { |k, v| v }
     end
 
-    def store(key, value)
+    def store(key, head, value)
       if same_key?(key)
         @value = value
       else
-        pos = head_match_length(key)
+        pos = head_match_size(key, head)
         if pos == @index
           push(key, value)
         else
@@ -108,31 +108,31 @@ class RadixTree
       end
     end
 
-    def retrieve(key)
+    def retrieve(key, head)
       if same_key?(key)
         @value
       elsif !@children
         UNDEFINED
       else
-        pos = head_match_length(key)
+        pos = head_match_size(key, head)
         if child = find_child(key[pos])
-          child.retrieve(key)
+          child.retrieve(key, @index)
         else
           UNDEFINED
         end
       end
     end
 
-    def delete(key)
+    def delete(key, head)
       if same_key?(key)
         value, @value = @value, UNDEFINED
         value
       elsif !@children
         nil
       else
-        pos = head_match_length(key)
+        pos = head_match_size(key, head)
         if child = find_child(key[pos])
-          value = child.delete(key)
+          value = child.delete(key, @index)
           if value and child.undefined?
             reap(child)
           end
@@ -172,7 +172,7 @@ class RadixTree
 
     def push(key, value)
       if @children && child = find_child(key[@index])
-        child.store(key, value)
+        child.store(key, @index, value)
       else
         add_child(Node.new(key, key.size, value))
       end
@@ -194,8 +194,8 @@ class RadixTree
       end
     end
 
-    def head_match_length(check)
-      0.upto(@index) do |idx|
+    def head_match_size(check, head)
+      head.upto(@index) do |idx|
         if check[idx] != @key[idx]
           return idx
         end
@@ -290,17 +290,17 @@ class RadixTree
   end
 
   def []=(key, value)
-    @root.store(key.to_s, value)
+    @root.store(key.to_s, 0, value)
   end
   alias store []=
 
   def key?(key)
-    @root.retrieve(key.to_s) != Node::UNDEFINED
+    @root.retrieve(key.to_s, 0) != Node::UNDEFINED
   end
   alias has_key? key?
 
   def [](key)
-    value = @root.retrieve(key.to_s)
+    value = @root.retrieve(key.to_s, 0)
     if value == Node::UNDEFINED
       if @default != DEFAULT
         @default
@@ -315,7 +315,7 @@ class RadixTree
   end
 
   def delete(key)
-    @root.delete(key.to_s)
+    @root.delete(key.to_s, 0)
   end
 
   def dump_tree(io = '')
