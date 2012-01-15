@@ -16,6 +16,12 @@ to avoid DoS via Algorithmic Complexity Attacks.
 See comments in lib/radix_tree.rb
 
 
+== History
+
+ * 1.0.0 - Initial release.
+ * 1.1.0 - 1.8 support, speed/memory perf improvement.
+
+
 == Author
 
 Name:: Hiroshi Nakamura
