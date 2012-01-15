@@ -111,15 +111,14 @@ class RadixTree
     def retrieve(key, head)
       if same_key?(key)
         @value
-      elsif !@children
-        UNDEFINED
       else
-        pos = head_match_size(key, head)
-        if child = find_child(key[pos])
-          child.retrieve(key, @index)
-        else
-          UNDEFINED
+        if @children
+          pos = head_match_size(key, head)
+          if child = find_child(key[pos])
+            return child.retrieve(key, @index)
+          end
         end
+        UNDEFINED
       end
     end
 
