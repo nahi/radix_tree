@@ -5,13 +5,14 @@
 # 10 times slower for 10 bytes key, 100000 elements retrieval
 #
 # TODO: Implement following methods for Hash compatibility.
-# * delete_if
-# * reject
-# * reject!
-# * fetch
-# * values_at
-# * replace
-# * key
+# * delete_if   Done
+# * dup         Done
+# * reject      Done
+# * reject!     Done
+# * fetch       Done
+# * values_at   Done
+# * replace     Done
+# * key         Done
 # * shift
 # * has_value?/value?
 # * ==
@@ -154,6 +155,19 @@ class RadixTree
         end
       end
     end
+
+    def dup
+        if @children
+          children_dup = Hash.new
+          @children.each do |k,v|
+            children_dup[k] = v.dup
+          end
+        else
+          children_dup = nil
+        end
+        Node.new(@key, @index, @value, children_dup)
+    end
+    alias clone dup
 
     private
 
@@ -325,4 +339,103 @@ class RadixTree
   def to_hash
     inject({}) { |r, (k, v)| r[k] = v; r }
   end
+
+  def delete_if(&block)
+    if block_given?
+      temp = []
+      @root.each do |key, value|
+        if block.call key, value
+            temp << key
+        end
+      end
+      temp.each do |k|
+        @root.delete(k, 0)
+      end
+      self
+    else
+      Enumerator.new(@root)
+    end
+  end
+
+  def dup
+      if @default != DEFAULT then
+        rt = RadixTree.new(@default)
+      elsif @default_proc then
+             rt = RadixTree.new(@default_proc.to_proc)
+      else
+        rt = RadixTree.new
+      end
+      rt.root = @root.dup
+      rt
+  end
+  alias clone dup
+
+  def reject(&block)
+    if block_given?
+      self.dup.delete_if(&block)
+    else
+      Enumerator.new(@root)
+    end
+  end
+
+  def reject!(&block)
+    if block_given?
+      temp = []
+      @root.each do |key, value|
+        if block.call key, value
+            temp << key
+        end
+      end
+      if temp.empty?
+        nil
+      else
+        temp.each do |k|
+          @root.delete(k, 0)
+        end
+        self
+      end
+    else
+      Enumerator.new(@root)
+    end
+  end
+
+  def fetch(key, *args, &block)
+    if args.size > 0 && block
+      raise ArgumentError, 'wrong number of arguments'
+    elsif self[key]
+      self[key]
+    elsif args.size == 1
+      args[0]
+    elsif block
+      block.call key
+    else
+      raise KeyError, 'can\'t find the key'
+    end
+  end
+
+  def values_at(*args)
+    vs = []
+    args.each do |a|
+        vs << self[a]
+    end
+    vs
+  end
+
+  def replace(h)
+    self.clear
+    h.each do |k,v|
+      self[k] = v
+    end
+  end
+
+  def key(value)
+    self.each do |k,v|
+        return k if v == value
+        nil
+    end
+  end
+
+  protected
+  attr_accessor :root
+
 end
