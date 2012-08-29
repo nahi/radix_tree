@@ -13,8 +13,9 @@
 # * values_at   Done
 # * replace     Done
 # * key         Done
-# * shift
-# * has_value?/value?
+# * shift       Done
+# * has_value?  Done
+# * value?      Done
 # * ==
 # * eql?
 # * hash
@@ -416,7 +417,7 @@ class RadixTree
   def values_at(*args)
     vs = []
     args.each do |a|
-        vs << self[a]
+      vs << self[a]
     end
     vs
   end
@@ -430,9 +431,40 @@ class RadixTree
 
   def key(value)
     self.each do |k,v|
-        return k if v == value
-        nil
+      return k if v == value
+      nil
     end
+  end
+
+  def shift
+    self.each do |k,v|
+      self.delete(k)
+      return [k, v]
+    end
+  end
+
+  def has_value?(value)
+    self.each do |k,v|
+      return true if value == v 
+    end
+    false
+  end
+  alias value? has_value?
+
+  def ==(oh)
+    return false if self.size != oh.size
+    self.each_key do |k|
+      return false if self[k] != oh[k]
+    end
+    true
+  end
+
+  def eql?(oh)
+    return false if self.size != oh.size
+    self.each_key do |k|
+      return false unless self[k].eql?(oh[k])
+    end
+    true
   end
 
   protected

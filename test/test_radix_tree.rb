@@ -392,6 +392,53 @@ class TestRadixTree < Test::Unit::TestCase
     assert_equal 'bc', h.key(4)
   end
 
+  def test_shift
+    h, s = @rt, @ip
+    k, v = h.shift
+    assert_equal 'a', k
+    assert_equal 5, v
+    assert_equal 1, h['aa']
+    assert_equal 2, h['ab']
+    assert_equal 3, h['bb']
+    assert_equal 4, h['bc']
+    assert_equal 6, h['abc']
+  end
+
+  def test_has_value?
+    h, s = @rt, @ip
+    assert_equal true, h.has_value?(3)
+    assert_equal true, h.has_value?(4)
+    assert_equal true, h.value?(5)
+    assert_equal true, h.value?(6)
+    assert_equal false, h.has_value?(7)
+  end
+
+  def test_=
+    h, s = @rt, @ip
+    h2 = RadixTree.new
+    s.each do |k, v|
+      h2[k] = v
+    end
+    assert_equal true, (h==h2)
+    tk, tv= h2.shift
+    assert_equal false, (h==h2)
+    h2[tk] = tv+3
+    assert_equal false, (h==h2)
+  end
+
+  def test_eql?
+    h, s = @rt, @ip
+    h2 = RadixTree.new
+    s.each do |k, v|
+      h2[k] = v
+    end
+    assert_equal true, (h.eql?(h2))
+    tk, tv= h2.shift
+    assert_equal false, (h.eql?(h2))
+    h2[tk] = tv.to_s
+    assert_equal false, (h.eql?(h2))
+  end
+  #@ip = { 'aa' => 1, 'ab' => 2, 'bb' => 3, 'bc' => 4, 'a' => 5, 'abc' => 6 }
   if RUBY_VERSION >= '1.9.0'
     def test_encoding
       h = RadixTree.new
