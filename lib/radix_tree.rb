@@ -5,19 +5,6 @@
 # 10 times slower for 10 bytes key, 100000 elements retrieval
 #
 # TODO: Implement following methods for Hash compatibility.
-# * delete_if   Done
-# * dup         Done
-# * reject      Done
-# * reject!     Done
-# * fetch       Done
-# * values_at   Done
-# * replace     Done
-# * key         Done
-# * shift       Done
-# * has_value?  Done
-# * value?      Done
-# * ==
-# * eql?
 # * hash
 #
 # TODO: Implement following features for utilizing strength of Radix Tree.
