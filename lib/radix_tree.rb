@@ -284,15 +284,15 @@ class RadixTree
   DEFAULT = Object.new
 
   attr_accessor :default
-  attr_reader :default_proc
+  attr_reader :path_proc
   
   def initialize(default = DEFAULT, &block)
-    if block && default != DEFAULT
-      raise ArgumentError, 'wrong number of arguments'
-    end
+    #if block && default != DEFAULT
+    #  raise ArgumentError, 'wrong number of arguments'
+    #end
     @root = Node.new('', 0)
     @default = default
-    @default_proc = block
+    @path_proc = block
   end
 
   def empty?
@@ -363,8 +363,6 @@ class RadixTree
     if value == Node::UNDEFINED
       if @default != DEFAULT
         @default
-      elsif @default_proc
-        @default_proc.call
       else
         nil
       end
@@ -404,10 +402,8 @@ class RadixTree
   end
 
   def dup
-      if @default != DEFAULT then
-        rt = RadixTree.new(@default)
-      elsif @default_proc then
-             rt = RadixTree.new(@default_proc.to_proc)
+      if @default != DEFAULT || @path_proc then
+        rt = RadixTree.new(@default, @path_proc.to_proc)
       else
         rt = RadixTree.new
       end

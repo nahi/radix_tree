@@ -246,19 +246,23 @@ class TestRadixTree < Test::Unit::TestCase
   end
 
   def test_default
+=begin
     assert_raise(ArgumentError) do
       RadixTree.new('both') { :not_allowed }
     end
+=end
 
     h = RadixTree.new('abc')
     assert_equal 'abc', h['foo']
     assert_equal 'abc', h['bar']
     assert h['baz'].object_id == h['qux'].object_id
 
+=begin
     h = RadixTree.new { [1, 2] }
     assert_equal [1, 2], h['foo']
     assert_equal [1, 2], h['bar']
     assert h['baz'].object_id != h['qux'].object_id
+=end
   end
 
   def test_to_hash
@@ -490,6 +494,10 @@ class TestRadixTree < Test::Unit::TestCase
     assert_equal ['cde'], h.find_all('cde')
     assert_equal ['cdf'], h.find_all('cdf')
     assert_equal ['cf'], h.find_all('cf')
+  end
+
+  def test_init_block
+      h = RadixTree.new
   end
 
   if RUBY_VERSION >= '1.9.0'
