@@ -470,7 +470,28 @@ class TestRadixTree < Test::Unit::TestCase
     assert_equal nil, h.find_successor('cf')
   end
 
-  #@ip = { 'aa' => 1, 'ab' => 2, 'bb' => 3, 'bc' => 4, 'a' => 5, 'abc' => 6 }
+  def test_find_all
+    h, s = @rt, @ip
+    h['cde'] = 7
+    h['cdf'] = 8
+    h['cf'] = 9
+    h['c'] = 10
+    assert_equal ['ab', 'abc'], h.find_all('ab')
+    assert_equal ['a', 'aa', 'ab', 'abc'], h.find_all('a')
+    assert_equal ['aa'], h.find_all('aa')
+    assert_equal ['abc'], h.find_all('abc')
+
+    assert_equal ['bb', 'bc'], h.find_all('b')
+    assert_equal ['bb'], h.find_all('bb')
+    assert_equal ['bc'], h.find_all('bc')
+
+    assert_equal ['c', 'cde', 'cdf', 'cf'], h.find_all('c')
+    assert_equal ['cde', 'cdf'], h.find_all('cd')
+    assert_equal ['cde'], h.find_all('cde')
+    assert_equal ['cdf'], h.find_all('cdf')
+    assert_equal ['cf'], h.find_all('cf')
+  end
+
   if RUBY_VERSION >= '1.9.0'
     def test_encoding
       h = RadixTree.new

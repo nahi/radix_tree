@@ -8,7 +8,6 @@
 # * hash
 #
 # TODO: Implement following features for utilizing strength of Radix Tree.
-# * find_all by start string
 # * delete_all by start string
 #
 class RadixTree
@@ -191,6 +190,25 @@ class RadixTree
           pos = head_match_size(key, head)
           if child = find_child(key[pos])
             return child.find_suc(key, @index, flag)
+          end
+        end
+        nil
+      end
+    end
+
+    def find_all(prefix, head, flag)
+      flag = true if !flag && same_key?(prefix)
+      if flag
+        strs = []
+          self.each do |l,v|
+            strs << l if v != UNDEFINED
+          end
+        return strs
+      else
+        if @children
+          pos = head_match_size(prefix, head)
+          if child = find_child(prefix[pos])
+            return child.find_all(prefix, @index, flag)
           end
         end
         nil
@@ -500,6 +518,10 @@ class RadixTree
 
   def find_successor(key)
     @root.find_suc(key, 0, false)
+  end
+
+  def find_all(prefix)
+    @root.find_all(prefix, 0, false)
   end
 
   protected
