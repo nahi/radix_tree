@@ -8,8 +8,6 @@
 # * hash
 #
 # TODO: Implement following features for utilizing strength of Radix Tree.
-# * find predecessor
-# * find successor
 # * find_all by start string
 # * delete_all by start string
 #
@@ -156,6 +154,48 @@ class RadixTree
         Node.new(@key, @index, @value, children_dup)
     end
     alias clone dup
+
+    def find_pre(key, head, p_key)
+      if same_key?(key)
+        (p_key == "" ? nil : p_key)
+      else
+        if @children
+          pos = head_match_size(key, head)
+          if child = find_child(key[pos])
+            return child.find_pre(key, @index, self.label)
+          end
+        end
+        nil
+      end
+    end
+
+    def find_suc(key, head, flag)
+      # check before the key or after
+      flag = true if !flag && same_key?(key)
+      if flag
+        # after tje key and omit undefined value
+        if undefined? || self.label == key
+          # if undefined keep going
+          if @children
+            # next by lexicographic order
+            k = @children.keys.sort.shift
+            return @children[k].find_suc(key, nil, flag)
+          end
+          nil
+        else
+          return self.label
+        end
+      else
+        # before the key
+        if @children
+          pos = head_match_size(key, head)
+          if child = find_child(key[pos])
+            return child.find_suc(key, @index, flag)
+          end
+        end
+        nil
+      end
+    end
 
     private
 
@@ -452,6 +492,14 @@ class RadixTree
       return false unless self[k].eql?(oh[k])
     end
     true
+  end
+
+  def find_predecessor(key)
+    @root.find_pre(key, 0, nil)
+  end
+
+  def find_successor(key)
+    @root.find_suc(key, 0, false)
   end
 
   protected

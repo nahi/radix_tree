@@ -438,6 +438,38 @@ class TestRadixTree < Test::Unit::TestCase
     h2[tk] = tv.to_s
     assert_equal false, (h.eql?(h2))
   end
+
+  def test_find_predecessor
+    h, s = @rt, @ip
+    assert_equal nil, h.find_predecessor('a')
+    assert_equal nil, h.find_predecessor('b')
+    assert_equal 'a', h.find_predecessor('aa')
+    assert_equal 'a', h.find_predecessor('ab')
+    assert_equal 'ab', h.find_predecessor('abc')
+    assert_equal 'b', h.find_predecessor('bb')
+    assert_equal 'b', h.find_predecessor('bc')
+  end
+
+  def test_find_successor
+    h, s = @rt, @ip
+    h['cde'] = 7
+    h['cdf'] = 8
+    h['cf'] = 9
+    h['c'] = 10
+    assert_equal 'aa', h.find_successor('a')
+    assert_equal nil, h.find_successor('aa')
+    assert_equal 'abc', h.find_successor('ab')
+    assert_equal nil, h.find_successor('abc')
+    assert_equal 'bb', h.find_successor('b')
+    assert_equal nil, h.find_successor('bb')
+    assert_equal nil, h.find_successor('bc')
+    assert_equal 'cde', h.find_successor('c')
+    assert_equal 'cde', h.find_successor('cd')
+    assert_equal nil, h.find_successor('cde')
+    assert_equal nil, h.find_successor('cdf')
+    assert_equal nil, h.find_successor('cf')
+  end
+
   #@ip = { 'aa' => 1, 'ab' => 2, 'bb' => 3, 'bc' => 4, 'a' => 5, 'abc' => 6 }
   if RUBY_VERSION >= '1.9.0'
     def test_encoding
