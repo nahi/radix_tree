@@ -76,21 +76,32 @@ class RadixTree
       collect { |k, v| v }
     end
 
-    def store(key, head, value)
+    def store(key, head, value, &block)
       if same_key?(key)
-        @value = value
+        if block_given?
+          @value = block.call @value, value
+        else
+          @value = value
+        end
       else
         pos = head_match_size(key, head)
         if pos == @index
-          push(key, value)
+          push(key, value, &block)
         else
-          split(pos)
+          split(pos, &block)
           if same_key?(key)
-            @value = value
+            if block_given?
+              @value = block.call @value, value
+            else
+              @value = value
+            end
           else
-            push(key, value)
+            push(key, value, &block)
           end
         end
+      end
+      if block_given?
+        @value = block.call @value, value
       end
     end
 
@@ -217,6 +228,8 @@ class RadixTree
 
     private
 
+    # maybe adding a set_value function
+
     def same_key?(key)
       @index == key.size and @key.start_with?(key)
     end
@@ -229,17 +242,28 @@ class RadixTree
       pool
     end
 
-    def push(key, value)
+    def push(key, value, &block)
       if @children && child = find_child(key[@index])
-        child.store(key, @index, value)
+        child.store(key, @index, value, &block)
       else
-        add_child(Node.new(key, key.size, value))
+        if block_given?
+          v = block.call nil, value
+        else
+          v = value
+        end
+        add_child(Node.new(key, key.size, v))
       end
     end
 
-    def split(pos)
+    def split(pos, &block)
       child = Node.new(@key, @index, @value, @children)
-      @index, @value, @children = pos, UNDEFINED, nil
+      #@index, @value, @children = pos, UNDEFINED, nil
+      if block_given?
+        @value = block.call @value.dup, nil
+        @index, @children = pos, nil
+      else
+        @index, @value, @children = pos, UNDEFINED, nil
+      end
       add_child(child)
     end
 
@@ -290,7 +314,7 @@ class RadixTree
     #if block && default != DEFAULT
     #  raise ArgumentError, 'wrong number of arguments'
     #end
-    @root = Node.new('', 0)
+    reset_root(&block)
     @default = default
     @path_proc = block
   end
@@ -345,11 +369,12 @@ class RadixTree
   end
 
   def clear
-    @root = Node.new('', 0)
+    #@root = Node.new('', 0)
+    reset_root(&@path_proc)
   end
 
   def []=(key, value)
-    @root.store(key.to_s, 0, value)
+    @root.store(key.to_s, 0, value, &@path_proc)
   end
   alias store []=
 
@@ -523,4 +548,12 @@ class RadixTree
   protected
   attr_accessor :root
 
+  def reset_root(&block)
+    if block_given?
+      v = block.call nil, nil
+      @root = Node.new('', 0, v)
+    else
+      @root = Node.new('', 0)
+    end
+  end
 end

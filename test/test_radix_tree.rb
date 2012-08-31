@@ -246,23 +246,19 @@ class TestRadixTree < Test::Unit::TestCase
   end
 
   def test_default
-=begin
-    assert_raise(ArgumentError) do
-      RadixTree.new('both') { :not_allowed }
-    end
-=end
+    #assert_raise(ArgumentError) do
+    #  RadixTree.new('both') { :not_allowed }
+    #end
 
     h = RadixTree.new('abc')
     assert_equal 'abc', h['foo']
     assert_equal 'abc', h['bar']
     assert h['baz'].object_id == h['qux'].object_id
 
-=begin
-    h = RadixTree.new { [1, 2] }
-    assert_equal [1, 2], h['foo']
-    assert_equal [1, 2], h['bar']
-    assert h['baz'].object_id != h['qux'].object_id
-=end
+    #h = RadixTree.new { [1, 2] }
+    #assert_equal [1, 2], h['foo']
+    #assert_equal [1, 2], h['bar']
+    #assert h['baz'].object_id != h['qux'].object_id
   end
 
   def test_to_hash
@@ -480,24 +476,48 @@ class TestRadixTree < Test::Unit::TestCase
     h['cdf'] = 8
     h['cf'] = 9
     h['c'] = 10
-    assert_equal ['ab', 'abc'], h.find_all('ab')
-    assert_equal ['a', 'aa', 'ab', 'abc'], h.find_all('a')
-    assert_equal ['aa'], h.find_all('aa')
-    assert_equal ['abc'], h.find_all('abc')
+    assert_equal ['ab', 'abc'].sort, h.find_all('ab').sort.sort
+    assert_equal ['a', 'aa', 'ab', 'abc'].sort, h.find_all('a').sort
+    assert_equal ['aa'].sort, h.find_all('aa').sort
+    assert_equal ['abc'].sort, h.find_all('abc').sort
 
-    assert_equal ['bb', 'bc'], h.find_all('b')
-    assert_equal ['bb'], h.find_all('bb')
-    assert_equal ['bc'], h.find_all('bc')
+    assert_equal ['bb', 'bc'].sort, h.find_all('b').sort
+    assert_equal ['bb'].sort, h.find_all('bb').sort
+    assert_equal ['bc'].sort, h.find_all('bc').sort
 
-    assert_equal ['c', 'cde', 'cdf', 'cf'], h.find_all('c')
-    assert_equal ['cde', 'cdf'], h.find_all('cd')
-    assert_equal ['cde'], h.find_all('cde')
-    assert_equal ['cdf'], h.find_all('cdf')
-    assert_equal ['cf'], h.find_all('cf')
+    assert_equal ['c', 'cde', 'cdf', 'cf'].sort, h.find_all('c').sort
+    assert_equal ['cde', 'cdf'].sort, h.find_all('cd').sort
+    assert_equal ['cde'].sort, h.find_all('cde').sort
+    assert_equal ['cdf'].sort, h.find_all('cdf').sort
+    assert_equal ['cf'].sort, h.find_all('cf').sort
   end
 
   def test_init_block
-      h = RadixTree.new
+    require 'set'
+    h = RadixTree.new do | node_v, v|
+      if node_v == nil && v == nil  # for root first time 
+        node_v = Set.new
+      elsif node_v == nil              # for node first time
+        node_v = Set.new
+        node_v.add(v)
+      elsif v == nil                # for split the new node
+        #return node_v
+      else                          # for normal handle
+        node_v.add(v) 
+      end
+      node_v
+    end
+    s = { 'aa' => 1, 'ab' => 2, 'bb' => 3, 'bc' => 4, 'a' => 5, 'abc' => 6 }
+    s.each do |k, v|
+      h[k] = v
+    end
+    assert_equal [1, 2, 5, 6].to_set, h['a']
+    assert_equal [1].to_set, h['aa']
+    assert_equal [2, 6].to_set, h['ab']
+    assert_equal [6].to_set, h['abc']
+    assert_equal [3, 4].to_set, h['b']
+    assert_equal [3].to_set, h['bb']
+    assert_equal [4].to_set, h['bc']
   end
 
   if RUBY_VERSION >= '1.9.0'
