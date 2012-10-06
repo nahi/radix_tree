@@ -5,23 +5,9 @@
 # 10 times slower for 10 bytes key, 100000 elements retrieval
 #
 # TODO: Implement following methods for Hash compatibility.
-# * delete_if
-# * reject
-# * reject!
-# * fetch
-# * values_at
-# * replace
-# * key
-# * shift
-# * has_value?/value?
-# * ==
-# * eql?
 # * hash
 #
 # TODO: Implement following features for utilizing strength of Radix Tree.
-# * find predecessor
-# * find successor
-# * find_all by start string
 # * delete_all by start string
 #
 class RadixTree
@@ -90,21 +76,32 @@ class RadixTree
       collect { |k, v| v }
     end
 
-    def store(key, head, value)
+    def store(key, head, value, &block)
       if same_key?(key)
-        @value = value
+        if block_given?
+          @value = block.call @value, value
+        else
+          @value = value
+        end
       else
         pos = head_match_size(key, head)
         if pos == @index
-          push(key, value)
+          push(key, value, &block)
         else
-          split(pos)
+          split(pos, &block)
           if same_key?(key)
-            @value = value
+            if block_given?
+              @value = block.call @value, value
+            else
+              @value = value
+            end
           else
-            push(key, value)
+            push(key, value, &block)
           end
         end
+      end
+      if block_given?
+        @value = block.call @value, value
       end
     end
 
@@ -155,7 +152,105 @@ class RadixTree
       end
     end
 
+    def dup
+        if @children
+          children_dup = Hash.new
+          @children.each do |k,v|
+            children_dup[k] = v.dup
+          end
+        else
+          children_dup = nil
+        end
+        Node.new(@key, @index, @value, children_dup)
+    end
+    alias clone dup
+
+    def find_pre(key, head, p_key)
+      if same_key?(key)
+        (p_key == "" ? nil : p_key)
+      else
+        if @children
+          pos = head_match_size(key, head)
+          if child = find_child(key[pos])
+            return child.find_pre(key, @index, self.label)
+          end
+        end
+        nil
+      end
+    end
+
+    def find_suc(key, head, flag)
+      # check before the key or after
+      flag = true if !flag && same_key?(key)
+      if flag
+        # after tje key and omit undefined value
+        if undefined? || self.label == key
+          # if undefined keep going
+          if @children
+            # next by lexicographic order
+            k = @children.keys.sort.shift
+            return @children[k].find_suc(key, nil, flag)
+          end
+          nil
+        else
+          return self.label
+        end
+      else
+        # before the key
+        if @children
+          pos = head_match_size(key, head)
+          if child = find_child(key[pos])
+            return child.find_suc(key, @index, flag)
+          end
+        end
+        nil
+      end
+    end
+
+    def find_all(prefix, head, flag)
+      flag = true if !flag && same_key?(prefix)
+      if flag
+        strs = []
+          self.each do |l,v|
+            strs << l if v != UNDEFINED
+          end
+        return strs
+      else
+        if @children
+          pos = head_match_size(prefix, head)
+          if child = find_child(prefix[pos])
+            return child.find_all(prefix, @index, flag)
+          end
+        end
+        nil
+      end
+    end
+
+    def each_with_parent(parent, &block)
+        if @value != UNDEFINED && parent != nil
+            block.call [label, @value, parent]
+        end
+        if @children
+            @children.each_value do |child|
+                child.each_with_parent(self, &block)
+            end
+        end
+    end
+
+    def each_with_children(&block)
+        if @value != UNDEFINED
+            block.call [label, @value, @children]
+        end
+        if @children
+            @children.each_value do |child|
+                child.each_with_children(&block)
+            end
+        end
+    end
+
     private
+
+    # maybe adding a set_value function
 
     def same_key?(key)
       @index == key.size and @key.start_with?(key)
@@ -169,17 +264,28 @@ class RadixTree
       pool
     end
 
-    def push(key, value)
+    def push(key, value, &block)
       if @children && child = find_child(key[@index])
-        child.store(key, @index, value)
+        child.store(key, @index, value, &block)
       else
-        add_child(Node.new(key, key.size, value))
+        if block_given?
+          v = block.call nil, value
+        else
+          v = value
+        end
+        add_child(Node.new(key, key.size, v))
       end
     end
 
-    def split(pos)
+    def split(pos, &block)
       child = Node.new(@key, @index, @value, @children)
-      @index, @value, @children = pos, UNDEFINED, nil
+      #@index, @value, @children = pos, UNDEFINED, nil
+      if block_given?
+        @value = block.call @value.dup, nil
+        @index, @children = pos, nil
+      else
+        @index, @value, @children = pos, UNDEFINED, nil
+      end
       add_child(child)
     end
 
@@ -224,15 +330,15 @@ class RadixTree
   DEFAULT = Object.new
 
   attr_accessor :default
-  attr_reader :default_proc
+  attr_reader :path_proc
   
   def initialize(default = DEFAULT, &block)
-    if block && default != DEFAULT
-      raise ArgumentError, 'wrong number of arguments'
-    end
-    @root = Node.new('', 0)
+    #if block && default != DEFAULT
+    #  raise ArgumentError, 'wrong number of arguments'
+    #end
+    reset_root(&block)
     @default = default
-    @default_proc = block
+    @path_proc = block
   end
 
   def empty?
@@ -285,11 +391,12 @@ class RadixTree
   end
 
   def clear
-    @root = Node.new('', 0)
+    #@root = Node.new('', 0)
+    reset_root(&@path_proc)
   end
 
   def []=(key, value)
-    @root.store(key.to_s, 0, value)
+    @root.store(key.to_s, 0, value, &@path_proc)
   end
   alias store []=
 
@@ -303,8 +410,6 @@ class RadixTree
     if value == Node::UNDEFINED
       if @default != DEFAULT
         @default
-      elsif @default_proc
-        @default_proc.call
       else
         nil
       end
@@ -324,5 +429,194 @@ class RadixTree
 
   def to_hash
     inject({}) { |r, (k, v)| r[k] = v; r }
+  end
+
+  def delete_if(&block)
+    if block_given?
+      temp = []
+      @root.each do |key, value|
+        if block.call key, value
+            temp << key
+        end
+      end
+      temp.each do |k|
+        @root.delete(k, 0)
+      end
+      self
+    else
+      Enumerator.new(@root)
+    end
+  end
+
+  def dup
+      if @default != DEFAULT || @path_proc then
+        rt = RadixTree.new(@default, @path_proc.to_proc)
+      else
+        rt = RadixTree.new
+      end
+      rt.root = @root.dup
+      rt
+  end
+  alias clone dup
+
+  def reject(&block)
+    if block_given?
+      self.dup.delete_if(&block)
+    else
+      Enumerator.new(@root)
+    end
+  end
+
+  def reject!(&block)
+    if block_given?
+      temp = []
+      @root.each do |key, value|
+        if block.call key, value
+            temp << key
+        end
+      end
+      if temp.empty?
+        nil
+      else
+        temp.each do |k|
+          @root.delete(k, 0)
+        end
+        self
+      end
+    else
+      Enumerator.new(@root)
+    end
+  end
+
+  def fetch(key, *args, &block)
+    if args.size > 0 && block
+      raise ArgumentError, 'wrong number of arguments'
+    elsif self[key]
+      self[key]
+    elsif args.size == 1
+      args[0]
+    elsif block
+      block.call key
+    else
+      raise KeyError, 'can\'t find the key'
+    end
+  end
+
+  def values_at(*args)
+    vs = []
+    args.each do |a|
+      vs << self[a]
+    end
+    vs
+  end
+
+  def replace(h)
+    self.clear
+    h.each do |k,v|
+      self[k] = v
+    end
+  end
+
+  def key(value)
+    self.each do |k,v|
+      return k if v == value
+      nil
+    end
+  end
+
+  def shift
+    self.each do |k,v|
+      self.delete(k)
+      return [k, v]
+    end
+  end
+
+  def has_value?(value)
+    self.each do |k,v|
+      return true if value == v 
+    end
+    false
+  end
+  alias value? has_value?
+
+  def ==(oh)
+    return false if self.size != oh.size
+    self.each_key do |k|
+      return false if self[k] != oh[k]
+    end
+    true
+  end
+
+  def eql?(oh)
+    return false if self.size != oh.size
+    self.each_key do |k|
+      return false unless self[k].eql?(oh[k])
+    end
+    true
+  end
+
+  def find_predecessor(key)
+    @root.find_pre(key, 0, nil)
+  end
+
+  def find_successor(key)
+    @root.find_suc(key, 0, false)
+  end
+
+  def find_all(prefix)
+    @root.find_all(prefix, 0, false)
+  end
+
+    def TopNodes(l)
+        nodes = Hash.new
+        @root.each_with_parent(nil) do |label, values, parent|
+            # 1) Text(n).length >= l and
+            # 2) Parent node of n (if exist) fails on 1)
+            if label.size >= l && parent.label.size < l
+                nodes[label] = values
+            end
+        end
+        nodes
+    end
+
+    def BottomNodes(l, v, seed_list, seed_size)
+        nodes = Hash.new
+        @root.each_with_children do |label, values, children|
+            flag = false
+            # 1) NumCommonSeeds(n, n') == |Seeds| and
+            flag = true if NumCommonSeeds(v, values, seed_list, seed_size)
+            # 2) All children nodes of n(if exist) fails on 1)
+            if children
+                children.each_value do |child|
+                    flag = false if NumCommonSeeds(v, child.value, seed_list, seed_size)
+                end
+            end
+            if flag
+                nodes[label] = values
+            end
+        end
+        nodes
+    end
+
+    def NumCommonSeeds(v1, v2, sl, ss)
+        seed_found= Set.new
+        # (v1 & v2) = Intersect(Node n_1, Node n_2)
+        (v1 & v2).each do |i|
+            seed_found.add(sl[i])
+        end
+        # seed_found.size = NumCommonSeeds(Node n_1, Node n_2)
+        (seed_found.size == ss)
+    end
+
+  protected
+  attr_accessor :root
+
+  def reset_root(&block)
+    if block_given?
+      v = block.call nil, nil
+      @root = Node.new('', 0, v)
+    else
+      @root = Node.new('', 0)
+    end
   end
 end
