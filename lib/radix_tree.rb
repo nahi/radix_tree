@@ -5,23 +5,9 @@
 # 10 times slower for 10 bytes key, 100000 elements retrieval
 #
 # TODO: Implement following methods for Hash compatibility.
-# * delete_if
-# * reject
-# * reject!
-# * fetch
-# * values_at
-# * replace
-# * key
-# * shift
-# * has_value?/value?
-# * ==
-# * eql?
 # * hash
 #
 # TODO: Implement following features for utilizing strength of Radix Tree.
-# * find predecessor
-# * find successor
-# * find_all by start string
 # * delete_all by start string
 #
 class RadixTree
@@ -152,6 +138,80 @@ class RadixTree
           io << $/ + indent
           v.dump_tree(io, indent)
         end
+      end
+    end
+
+    def dup
+        if @children
+          children_dup = Hash.new
+          @children.each do |k,v|
+            children_dup[k] = v.dup
+          end
+        else
+          children_dup = nil
+        end
+        Node.new(@key, @index, @value, children_dup)
+    end
+    alias clone dup
+
+    def find_pre(key, head, p_key)
+      if same_key?(key)
+        (p_key == "" ? nil : p_key)
+      else
+        if @children
+          pos = head_match_size(key, head)
+          if child = find_child(key[pos])
+            return child.find_pre(key, @index, self.label)
+          end
+        end
+        nil
+      end
+    end
+
+    def find_suc(key, head, flag)
+      # check before the key or after
+      flag = true if !flag && same_key?(key)
+      if flag
+        # after tje key and omit undefined value
+        if undefined? || self.label == key
+          # if undefined keep going
+          if @children
+            # next by lexicographic order
+            k = @children.keys.sort.shift
+            return @children[k].find_suc(key, nil, flag)
+          end
+          nil
+        else
+          return self.label
+        end
+      else
+        # before the key
+        if @children
+          pos = head_match_size(key, head)
+          if child = find_child(key[pos])
+            return child.find_suc(key, @index, flag)
+          end
+        end
+        nil
+      end
+    end
+
+    def find_all(prefix, head, flag)
+      flag = true if !flag && same_key?(prefix)
+      if flag
+        strs = []
+          self.each do |l,v|
+            strs << l if v != UNDEFINED
+          end
+        return strs
+      else
+        if @children
+          pos = head_match_size(prefix, head)
+          if child = find_child(prefix[pos])
+            return child.find_all(prefix, @index, flag)
+          end
+        end
+        nil
       end
     end
 
@@ -325,4 +385,146 @@ class RadixTree
   def to_hash
     inject({}) { |r, (k, v)| r[k] = v; r }
   end
+
+  def delete_if(&block)
+    if block_given?
+      temp = []
+      @root.each do |key, value|
+        if block.call key, value
+            temp << key
+        end
+      end
+      temp.each do |k|
+        @root.delete(k, 0)
+      end
+      self
+    else
+      Enumerator.new(@root)
+    end
+  end
+
+  def dup
+      if @default != DEFAULT then
+        rt = RadixTree.new(@default)
+      elsif @default_proc then
+             rt = RadixTree.new(@default_proc.to_proc)
+      else
+        rt = RadixTree.new
+      end
+      rt.root = @root.dup
+      rt
+  end
+  alias clone dup
+
+  def reject(&block)
+    if block_given?
+      self.dup.delete_if(&block)
+    else
+      Enumerator.new(@root)
+    end
+  end
+
+  def reject!(&block)
+    if block_given?
+      temp = []
+      @root.each do |key, value|
+        if block.call key, value
+            temp << key
+        end
+      end
+      if temp.empty?
+        nil
+      else
+        temp.each do |k|
+          @root.delete(k, 0)
+        end
+        self
+      end
+    else
+      Enumerator.new(@root)
+    end
+  end
+
+  def fetch(key, *args, &block)
+    if args.size > 0 && block
+      raise ArgumentError, 'wrong number of arguments'
+    elsif self[key]
+      self[key]
+    elsif args.size == 1
+      args[0]
+    elsif block
+      block.call key
+    else
+      raise KeyError, 'can\'t find the key'
+    end
+  end
+
+  def values_at(*args)
+    vs = []
+    args.each do |a|
+      vs << self[a]
+    end
+    vs
+  end
+
+  def replace(h)
+    self.clear
+    h.each do |k,v|
+      self[k] = v
+    end
+  end
+
+  def key(value)
+    self.each do |k,v|
+      return k if v == value
+      nil
+    end
+  end
+
+  def shift
+    self.each do |k,v|
+      self.delete(k)
+      return [k, v]
+    end
+  end
+
+  def has_value?(value)
+    self.each do |k,v|
+      return true if value == v 
+    end
+    false
+  end
+  alias value? has_value?
+
+  def ==(oh)
+    return false if self.size != oh.size
+    self.each_key do |k|
+      return false if self[k] != oh[k]
+    end
+    true
+  end
+
+  def eql?(oh)
+    return false if self.size != oh.size
+    self.each_key do |k|
+      return false unless self[k].eql?(oh[k])
+    end
+    true
+  end
+
+  def find_predecessor(key)
+    @root.find_pre(key, 0, nil)
+  end
+
+  def find_successor(key)
+    @root.find_suc(key, 0, false)
+  end
+
+  def find_all(prefix)
+    @root.find_all(prefix, 0, false)
+  end
+
+  protected
+  attr_accessor :root
+
 end
