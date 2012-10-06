@@ -476,17 +476,17 @@ class TestRadixTree < Test::Unit::TestCase
     h['cdf'] = 8
     h['cf'] = 9
     h['c'] = 10
-    assert_equal ['ab', 'abc'], h.find_all('ab')
-    assert_equal ['a', 'aa', 'ab', 'abc'], h.find_all('a')
+    assert_equal ['ab', 'abc'].sort, h.find_all('ab').sort
+    assert_equal ['a', 'aa', 'ab', 'abc'].sort, h.find_all('a').sort
     assert_equal ['aa'], h.find_all('aa')
     assert_equal ['abc'], h.find_all('abc')
 
-    assert_equal ['bb', 'bc'], h.find_all('b')
+    assert_equal ['bb', 'bc'].sort, h.find_all('b').sort
     assert_equal ['bb'], h.find_all('bb')
     assert_equal ['bc'], h.find_all('bc')
 
-    assert_equal ['c', 'cde', 'cdf', 'cf'], h.find_all('c')
-    assert_equal ['cde', 'cdf'], h.find_all('cd')
+    assert_equal ['c', 'cde', 'cdf', 'cf'].sort, h.find_all('c').sort
+    assert_equal ['cde', 'cdf'].sort, h.find_all('cd').sort
     assert_equal ['cde'], h.find_all('cde')
     assert_equal ['cdf'], h.find_all('cdf')
     assert_equal ['cf'], h.find_all('cf')
