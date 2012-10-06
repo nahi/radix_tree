@@ -226,6 +226,28 @@ class RadixTree
       end
     end
 
+    def each_with_parent(parent, &block)
+        if @value != UNDEFINED && parent != nil
+            block.call [label, @value, parent]
+        end
+        if @children
+            @children.each_value do |child|
+                child.each_with_parent(self, &block)
+            end
+        end
+    end
+
+    def each_with_children(&block)
+        if @value != UNDEFINED
+            block.call [label, @value, @children]
+        end
+        if @children
+            @children.each_value do |child|
+                child.each_with_children(&block)
+            end
+        end
+    end
+
     private
 
     # maybe adding a set_value function
@@ -544,6 +566,47 @@ class RadixTree
   def find_all(prefix)
     @root.find_all(prefix, 0, false)
   end
+
+    def TopNodes(l)
+        nodes = Hash.new
+        @root.each_with_parent(nil) do |label, values, parent|
+            # 1) Text(n).length >= l and
+            # 2) Parent node of n (if exist) fails on 1)
+            if label.size >= l && parent.label.size < l
+                nodes[label] = values
+            end
+        end
+        nodes
+    end
+
+    def BottomNodes(l, v, seed_list, seed_size)
+        nodes = Hash.new
+        @root.each_with_children do |label, values, children|
+            flag = false
+            # 1) NumCommonSeeds(n, n') == |Seeds| and
+            flag = true if NumCommonSeeds(v, values, seed_list, seed_size)
+            # 2) All children nodes of n(if exist) fails on 1)
+            if children
+                children.each_value do |child|
+                    flag = false if NumCommonSeeds(v, child.value, seed_list, seed_size)
+                end
+            end
+            if flag
+                nodes[label] = values
+            end
+        end
+        nodes
+    end
+
+    def NumCommonSeeds(v1, v2, sl, ss)
+        seed_found= Set.new
+        # (v1 & v2) = Intersect(Node n_1, Node n_2)
+        (v1 & v2).each do |i|
+            seed_found.add(sl[i])
+        end
+        # seed_found.size = NumCommonSeeds(Node n_1, Node n_2)
+        (seed_found.size == ss)
+    end
 
   protected
   attr_accessor :root

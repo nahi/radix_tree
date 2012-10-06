@@ -518,6 +518,16 @@ class TestRadixTree < Test::Unit::TestCase
     assert_equal [3, 4].to_set, h['b']
     assert_equal [3].to_set, h['bb']
     assert_equal [4].to_set, h['bc']
+
+    assert_equal 'ab', h.key([2,6].to_set)
+
+    #puts h.dump_tree
+    #nodes = h.TopNodes(1)
+    #nodes.each do |k,v|
+    #    temp = h.BottomNodes(k,v)
+    #    puts temp.inspect
+    #end
+
   end
 
   if RUBY_VERSION >= '1.9.0'
