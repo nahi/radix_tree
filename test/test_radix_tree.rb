@@ -2,6 +2,16 @@
 require File.expand_path('./helper', File.dirname(__FILE__))
 
 class TestRadixTree < Test::Unit::TestCase
+  def setup
+    # rt for RadixTree
+    # ip for input
+    @rt = RadixTree.new
+    @ip = { 'aa' => 1, 'ab' => 2, 'bb' => 3, 'bc' => 4, 'a' => 5, 'abc' => 6 }
+    @ip.each do |k, v|
+      @rt[k] = v
+    end
+  end
+
   def test_aref_nil
     h = RadixTree.new
     h['abc'] = 1
@@ -176,26 +186,18 @@ class TestRadixTree < Test::Unit::TestCase
   end
 
   def test_each
-    h = RadixTree.new
-    s = { 'aa' => 1, 'ab' => 2, 'bb' => 3, 'bc' => 4, 'a' => 5, 'abc' => 6 }
-    s.each do |k, v|
-      h[k] = v
-    end
+    h, s = @rt, @ip
     assert_equal s.to_a.sort_by { |k, v| k }, h.each.sort_by { |k, v| k }
     #
     values = []
     h.each do |k, v|
       values << [k, v]
     end
-    assert_equal s.to_a.sort_by { |k, v| k }, values.sort_by { |k, v| k }
+    assert_equal h.to_a.sort_by { |k, v| k }, values.sort_by { |k, v| k }
   end
 
   def test_each_key
-    h = RadixTree.new
-    s = { 'aa' => 1, 'ab' => 2, 'bb' => 3, 'bc' => 4, 'a' => 5, 'abc' => 6 }
-    s.each do |k, v|
-      h[k] = v
-    end
+    h, s = @rt, @ip
     assert_equal s.keys.sort, h.each_key.sort
     #
     values = []
@@ -206,35 +208,23 @@ class TestRadixTree < Test::Unit::TestCase
   end
 
   def test_each_value
-    h = RadixTree.new
-    s = { 'aa' => 1, 'ab' => 2, 'bb' => 3, 'bc' => 4, 'a' => 5, 'abc' => 6, 'azzzzz' => 6 }
-    s.each do |k, v|
-      h[k] = v
-    end
+    h, s = @rt, @ip
     assert_equal s.values.sort, h.each_value.sort
     #
     values = []
     h.each_value do |v|
       values << v
     end
-    assert_equal s.values.sort, values.sort
+    assert_equal h.values.sort, values.sort
   end
 
   def test_keys
-    h = RadixTree.new
-    s = { 'aa' => 1, 'ab' => 2, 'bb' => 3, 'bc' => 4, 'a' => 5, 'abc' => 6 }
-    s.each do |k, v|
-      h[k] = v
-    end
+    h, s = @rt, @ip
     assert_equal s.keys.sort, h.keys.sort
   end
 
   def test_values
-    h = RadixTree.new
-    s = { 'aa' => 1, 'ab' => 2, 'bb' => 3, 'bc' => 4, 'a' => 5, 'abc' => 6 }
-    s.each do |k, v|
-      h[k] = v
-    end
+    h, s = @rt, @ip
     assert_equal s.values.sort, h.values.sort
   end
 
@@ -272,24 +262,234 @@ class TestRadixTree < Test::Unit::TestCase
   end
 
   def test_to_hash
-    h = RadixTree.new
-    s = { 'aa' => 1, 'ab' => 2, 'bb' => 3, 'bc' => 4, 'a' => 5, 'abc' => 6 }
-    s.each do |k, v|
-      h[k] = v
-    end
+    h, s = @rt, @ip
     assert_equal s, h.to_hash
   end
 
   def test_clear
+    assert_equal @ip, @rt.to_hash
+    @rt.clear
+    assert_equal 0, @rt.size
+    assert @rt.to_hash.empty?
+  end
+
+  def test_delete_if
+    h, s = @rt, @ip
+    assert_equal 6, h.size
+    h.delete_if do |k,v|
+        v > 3
+    end
+    assert_equal 3, h.size
+    assert_equal 1, h['aa']
+    assert_equal 2, h['ab']
+    assert_equal 3, h['bb']
+    assert_equal nil, h['bc']
+    assert_equal nil, h['a']
+    assert_equal nil, h['abc']
+  end
+
+  def test_dup
     h = RadixTree.new
-    s = { 'aa' => 1, 'ab' => 2, 'bb' => 3, 'bc' => 4, 'a' => 5, 'abc' => 6 }
+    s = { 'aa' => 1, 'ab' => 2, 'bb' => 3 }
     s.each do |k, v|
       h[k] = v
     end
-    assert_equal s, h.to_hash
-    h.clear
-    assert_equal 0, h.size
-    assert h.to_hash.empty?
+    assert_equal 3, h.size
+    assert_equal 1, h['aa']
+    assert_equal 2, h['ab']
+    assert_equal 3, h['bb']
+    h2 = h.dup
+    h2['aa'] = 4
+    h2['a'] = 5
+
+    assert_equal 3, h.size
+    assert_equal 1, h['aa']
+    assert_equal 2, h['ab']
+    assert_equal 3, h['bb']
+    assert_equal 4, h2.size
+    assert_equal 4, h2['aa']
+    assert_equal 2, h2['ab']
+    assert_equal 3, h2['bb']
+    assert_equal 5, h2['a']
+  end
+
+  def test_reject
+    h, s = @rt, @ip
+    h2 = h.reject do |k,v|
+        v > 3
+    end
+    assert_equal 6, h.size
+    assert_equal 1, h['aa']
+    assert_equal 2, h['ab']
+    assert_equal 3, h['bb']
+    assert_equal 4, h['bc']
+    assert_equal 5, h['a']
+    assert_equal 6, h['abc']
+
+    assert_equal 3, h2.size
+    assert_equal 1, h2['aa']
+    assert_equal 2, h2['ab']
+    assert_equal 3, h2['bb']
+    assert_equal nil, h2['bc']
+    assert_equal nil, h2['a']
+    assert_equal nil, h2['abc']
+  end
+
+  def test_reject!
+    h, s = @rt, @ip
+    h2 = h.reject! do |k,v|
+        v > 8
+    end
+    assert_equal 6, h.size
+    assert_equal 1, h['aa']
+    assert_equal 2, h['ab']
+    assert_equal 3, h['bb']
+    assert_equal 4, h['bc']
+    assert_equal 5, h['a']
+    assert_equal 6, h['abc']
+
+    assert_equal nil, h2
+  end
+
+  def fetch!
+    h = RadixTree.new
+    s = { 'aa' => 1, 'ab' => 2 }
+    s.each do |k, v|
+      h[k] = v
+    end
+    assert_equal 1, h.fetch('aa')
+    assert_equal 'df value', h.fetch('aac', 'df value')
+    assert_equal "aac:df value from block", h.fetch('aac') {|k| "#{k}:df value from block" }
+  end
+
+  def test_values_at
+    h, s = @rt, @ip
+    ks = s.keys.shuffle[0..2]
+    vs = h.values_at(*ks)
+    for i in (0..(ks.size)) do
+      assert_equal vs[i], h[ks[i]]
+    end
+  end
+
+  def test_replace
+    h = RadixTree.new
+    s = { 'aa' => 1, 'ab' => 2 }
+    s2 = { 'bz' => 3, 'kk' => 4 }
+    s.each do |k, v|
+      h[k] = v
+    end
+    assert_equal 1, h['aa']
+    assert_equal 2, h['ab']
+    h.replace(s2)
+    assert_equal 3, h['bz']
+    assert_equal 4, h['kk']
+  end
+
+  def test_key
+    h, s = @rt, @ip
+    assert_equal 'aa', h.key(1)
+    assert_equal 'bb', h.key(3)
+    assert_equal 'bc', h.key(4)
+  end
+
+  def test_shift
+    h, s = @rt, @ip
+    k, v = h.shift
+    assert_equal 'a', k
+    assert_equal 5, v
+    assert_equal 1, h['aa']
+    assert_equal 2, h['ab']
+    assert_equal 3, h['bb']
+    assert_equal 4, h['bc']
+    assert_equal 6, h['abc']
+  end
+
+  def test_has_value?
+    h, s = @rt, @ip
+    assert_equal true, h.has_value?(3)
+    assert_equal true, h.has_value?(4)
+    assert_equal true, h.value?(5)
+    assert_equal true, h.value?(6)
+    assert_equal false, h.has_value?(7)
+  end
+
+  def test_=
+    h, s = @rt, @ip
+    h2 = RadixTree.new
+    s.each do |k, v|
+      h2[k] = v
+    end
+    assert_equal true, (h==h2)
+    tk, tv= h2.shift
+    assert_equal false, (h==h2)
+    h2[tk] = tv+3
+    assert_equal false, (h==h2)
+  end
+
+  def test_eql?
+    h, s = @rt, @ip
+    h2 = RadixTree.new
+    s.each do |k, v|
+      h2[k] = v
+    end
+    assert_equal true, (h.eql?(h2))
+    tk, tv= h2.shift
+    assert_equal false, (h.eql?(h2))
+    h2[tk] = tv.to_s
+    assert_equal false, (h.eql?(h2))
+  end
+
+  def test_find_predecessor
+    h, s = @rt, @ip
+    assert_equal nil, h.find_predecessor('a')
+    assert_equal nil, h.find_predecessor('b')
+    assert_equal 'a', h.find_predecessor('aa')
+    assert_equal 'a', h.find_predecessor('ab')
+    assert_equal 'ab', h.find_predecessor('abc')
+    assert_equal 'b', h.find_predecessor('bb')
+    assert_equal 'b', h.find_predecessor('bc')
+  end
+
+  def test_find_successor
+    h, s = @rt, @ip
+    h['cde'] = 7
+    h['cdf'] = 8
+    h['cf'] = 9
+    h['c'] = 10
+    assert_equal 'aa', h.find_successor('a')
+    assert_equal nil, h.find_successor('aa')
+    assert_equal 'abc', h.find_successor('ab')
+    assert_equal nil, h.find_successor('abc')
+    assert_equal 'bb', h.find_successor('b')
+    assert_equal nil, h.find_successor('bb')
+    assert_equal nil, h.find_successor('bc')
+    assert_equal 'cde', h.find_successor('c')
+    assert_equal 'cde', h.find_successor('cd')
+    assert_equal nil, h.find_successor('cde')
+    assert_equal nil, h.find_successor('cdf')
+    assert_equal nil, h.find_successor('cf')
+  end
+
+  def test_find_all
+    h, s = @rt, @ip
+    h['cde'] = 7
+    h['cdf'] = 8
+    h['cf'] = 9
+    h['c'] = 10
+    assert_equal ['ab', 'abc'].sort, h.find_all('ab').sort
+    assert_equal ['a', 'aa', 'ab', 'abc'].sort, h.find_all('a').sort
+    assert_equal ['aa'], h.find_all('aa')
+    assert_equal ['abc'], h.find_all('abc')
+
+    assert_equal ['bb', 'bc'].sort, h.find_all('b').sort
+    assert_equal ['bb'], h.find_all('bb')
+    assert_equal ['bc'], h.find_all('bc')
+
+    assert_equal ['c', 'cde', 'cdf', 'cf'].sort, h.find_all('c').sort
+    assert_equal ['cde', 'cdf'].sort, h.find_all('cd').sort
+    assert_equal ['cde'], h.find_all('cde')
+    assert_equal ['cdf'], h.find_all('cdf')
+    assert_equal ['cf'], h.find_all('cf')
   end
 
   if RUBY_VERSION >= '1.9.0'
